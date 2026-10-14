@@ -2,6 +2,8 @@
 
 Frontend de LockerGo desarrollado con Angular 22, TypeScript 6, SCSS, Chart.js y ng2-charts.
 
+La autenticación usa un access token en memoria y un refresh token en cookie `httpOnly`; no se guardan tokens en `localStorage`.
+
 ## Development server
 
 Run `bun install` and then `bun run start` for a dev server at `http://localhost:4200/`. The application automatically reloads when source files change.

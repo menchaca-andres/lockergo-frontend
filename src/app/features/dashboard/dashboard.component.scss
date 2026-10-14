@@ -1,0 +1,85 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.dashboard {
+  min-height: 100vh;
+  padding: 32px clamp(20px, 6vw, 88px);
+  background: #f4f7f8;
+}
+
+header {
+  display: flex;
+  max-width: 1200px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #19313b;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 11px;
+  background: #e3f0ed;
+  color: #147d74;
+}
+
+.brand-accent {
+  color: #147d74;
+}
+
+button {
+  padding: 10px 15px;
+  border: 1px solid #dce6e4;
+  border-radius: 8px;
+  background: #fff;
+  color: #334d55;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 3px solid rgb(20 125 116 / 35%);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+section {
+  max-width: 1200px;
+  margin: 15vh auto 0;
+}
+
+.eyebrow {
+  color: #63817f;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+
+h1 {
+  margin: 14px 0 8px;
+  color: #19313b;
+}
+
+section > p:last-child {
+  color: #718187;
+}
+
+.error {
+  color: #a63b35;
+}

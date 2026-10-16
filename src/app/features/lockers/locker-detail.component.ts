@@ -67,14 +67,15 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
       ]
     };
   });
-  readonly sizeChartData = computed<ChartData<'doughnut'>>(() => {
-    const distribution = this.analytics()?.packageSizeDistribution ?? [];
+  readonly measurementChartData = computed<ChartData<'bar'>>(() => {
+    const measurements = this.analytics()?.packageMeasurements ?? [];
     return {
-      labels: distribution.map(({ size }) => `Talla ${size}`),
+      labels: measurements.map(({ packageCode }) => packageCode),
       datasets: [{
-        data: distribution.map(({ count }) => count),
-        backgroundColor: ['#168b7e', '#e2a542', '#597b9b'],
-        borderWidth: 0
+        data: measurements.map(({ estimatedHeightCm }) => estimatedHeightCm),
+        label: 'Altura estimada (cm)',
+        backgroundColor: '#168b7e',
+        borderRadius: 5
       }]
     };
   });
@@ -87,11 +88,29 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
       y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(120, 145, 146, .16)' } }
     }
   };
-  readonly sizeChartOptions: ChartConfiguration<'doughnut'>['options'] = {
+  readonly measurementChartOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '68%',
-    plugins: { legend: { position: 'bottom' } }
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const height = context.parsed.x;
+            return typeof height === 'number' ? ` ${height.toFixed(1)} cm` : 'Sin medida válida';
+          },
+          afterLabel: (context) => {
+            const measurement = this.analytics()?.packageMeasurements[context.dataIndex];
+            return measurement ? `Registrada: ${new Date(measurement.recordedAt).toLocaleString()}` : '';
+          }
+        }
+      }
+    },
+    scales: {
+      x: { beginAtZero: true, max: 20, title: { display: true, text: 'Altura estimada (cm)' } },
+      y: { grid: { display: false } }
+    }
   };
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);

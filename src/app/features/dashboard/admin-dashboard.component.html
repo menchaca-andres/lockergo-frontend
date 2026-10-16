@@ -227,7 +227,7 @@
         @if (data.recentPackages.length > 0) {
           <div class="table-scroll">
             <table>
-              <thead><tr><th>Código</th><th>Locker</th><th>Estado</th><th>Talla</th></tr></thead>
+              <thead><tr><th>Código</th><th>Locker</th><th>Estado</th><th>Medida</th></tr></thead>
               <tbody>
                 @for (package of data.recentPackages; track package.id_package) {
                   <tr>
@@ -236,7 +236,7 @@
                     <td><span class="status-tag" [class.picked-up]="package.status === 'PICKED_UP'">
                       {{ package.status === 'PICKED_UP' ? 'Recogido' : package.depositedAt ? 'Pendiente' : 'Por depositar' }}
                     </span></td>
-                    <td>{{ package.estimatedSize || '—' }}</td>
+                    <td>{{ package.estimatedHeightCm === null ? 'Sin medida' : package.estimatedHeightCm + ' cm' }}</td>
                   </tr>
                 }
               </tbody>

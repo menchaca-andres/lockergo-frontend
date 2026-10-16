@@ -61,9 +61,7 @@
                     <span>Depositado</span><time>{{ item.depositedAt ? (item.depositedAt | date:'medium') : 'Aún no depositado' }}</time>
                     <span>Recogido</span><time>{{ item.pickedUpAt ? (item.pickedUpAt | date:'medium') : 'Pendiente' }}</time>
                   </div>
-                  @if (item.estimatedSize) {
-                    <div class="size-note">Talla estimada <strong>{{ item.estimatedSize }}</strong></div>
-                  }
+                  <div class="size-note">Medida real <strong>{{ item.estimatedHeightCm === null ? 'Sin medida' : item.estimatedHeightCm + ' cm' }}</strong></div>
                 </article>
               }
             </div>

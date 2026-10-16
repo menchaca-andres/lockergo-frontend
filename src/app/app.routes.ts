@@ -5,6 +5,12 @@ import { DashboardComponent } from './features/dashboard/dashboard.component';
 
 export const routes: Routes = [
   {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./features/home/home.component').then((module) => module.HomeComponent)
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./features/auth/login.component').then((module) => module.LoginComponent)
@@ -28,6 +34,5 @@ export const routes: Routes = [
       }
     ]
   },
-  { path: '', pathMatch: 'full', redirectTo: 'login' },
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: '' }
 ];

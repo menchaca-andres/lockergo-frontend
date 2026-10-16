@@ -93,21 +93,21 @@
 
               <article class="panel analytics-panel">
                 <div class="section-heading">
-                  <div><h3>Tallas depositadas</h3><p>Distribución de paquetes por tamaño.</p></div>
+                  <div><h3>Medidas de paquetes</h3><p>Altura real estimada de cada paquete depositado, en centímetros.</p></div>
                 </div>
-                @if (report.packageSizeDistribution.length > 0) {
-                  <div class="chart-wrap donut-wrap">
+                @if (report.packageMeasurements.length > 0) {
+                  <div class="chart-wrap">
                     <canvas
                       baseChart
-                      type="doughnut"
-                      [data]="sizeChartData()"
-                      [options]="sizeChartOptions"
+                      type="bar"
+                      [data]="measurementChartData()"
+                      [options]="measurementChartOptions"
                       role="img"
-                      aria-label="Distribución de paquetes por talla"
+                      aria-label="Altura medida de cada paquete, en centímetros"
                     ></canvas>
                   </div>
                 } @else {
-                  <div class="empty-card chart-empty">Aún no hay paquetes clasificados.</div>
+                  <div class="empty-card chart-empty">Aún no hay medidas válidas de paquetes.</div>
                 }
               </article>
             </div>

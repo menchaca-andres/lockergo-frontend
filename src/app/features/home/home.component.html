@@ -1,0 +1,134 @@
+<main class="home-page">
+  <header class="site-header">
+    <a class="brand" routerLink="/" aria-label="LockerGo, inicio">
+      <span class="brand-symbol" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none">
+          <path d="M5.5 13 16 6.5 26.5 13v13H5.5V13Z" />
+          <path d="M11 15h10v11H11zM14 18h4" />
+        </svg>
+      </span>
+      <span class="brand-name">Locker<span>Go</span></span>
+    </a>
+    <nav class="header-actions" aria-label="Navegación principal">
+      <a class="nav-login" routerLink="/login">Iniciar sesión</a>
+      <a class="button button-small" routerLink="/login">Acceder <span aria-hidden="true">→</span></a>
+    </nav>
+  </header>
+
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="status-dot"></span> LOGÍSTICA INTELIGENTE</span>
+      <h1 id="hero-title">Tus entregas,<br>siempre <span>bajo control.</span></h1>
+      <p class="hero-description">
+        LockerGo conecta lockers inteligentes con quienes entregan y reciben paquetes.
+        Deposita con confianza, recibe actualizaciones y sigue cada entrega en un solo lugar.
+      </p>
+      <div class="hero-actions">
+        <a class="button button-primary" routerLink="/login">Entrar a mi cuenta <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="#como-funciona">Descubre cómo funciona <span aria-hidden="true">↓</span></a>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-label="Ilustración de un locker inteligente con un paquete depositado">
+      <div class="visual-card">
+        <div class="visual-topline">
+          <span class="online-pill"><i></i> EN LÍNEA</span>
+        </div>
+        <svg class="locker-illustration" viewBox="0 0 240 270" fill="none" aria-hidden="true">
+          <ellipse cx="119" cy="250" rx="77" ry="9" fill="#dce9e5"/>
+          <path d="m174 31 23 11v188l-23 10V31Z" fill="#c5d6d1"/>
+          <rect x="51" y="30" width="125" height="206" rx="11" fill="#e9f1ee" stroke="#b8cbc5" stroke-width="2"/>
+          <path d="M63 57h101v165H63z" fill="url(#locker-door-fill)" stroke="#c4d3cf" stroke-width="2"/>
+          <path d="M73 72h23m-23 7h23" stroke="#bfceca" stroke-width="3" stroke-linecap="round"/>
+          <rect x="140" y="78" width="14" height="26" rx="4" fill="#244e4c" stroke="#a9c3ba" stroke-width="2"/>
+          <path d="M144 85h6m-6 5h6" stroke="#7ce0be" stroke-width="2" stroke-linecap="round"/>
+          <rect x="78" y="153" width="65" height="53" rx="5" fill="url(#package-fill)" stroke="#d0a66e" stroke-width="2"/>
+          <path d="M107 154v51m-28-26h64" stroke="#f8e4bd" stroke-width="8" opacity=".75"/>
+          <path d="M59 237v8m104-8v8" stroke="#91a7a2" stroke-width="7" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="locker-door-fill" x1="63" y1="57" x2="164" y2="222" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#f5f9f7"/><stop offset="1" stop-color="#dce8e4"/>
+            </linearGradient>
+            <linearGradient id="package-fill" x1="78" y1="153" x2="143" y2="206" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#efcf9d"/><stop offset="1" stop-color="#dcae72"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="delivery-card">
+          <span class="delivery-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12v8.5M8 5.3l8 4.5"/></svg>
+          </span>
+          <span class="delivery-copy"><strong>Entrega segura</strong><small>Tu paquete está en el locker</small></span>
+          <span class="delivery-check" aria-label="Confirmado">✓</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="benefits" aria-label="Ventajas de LockerGo">
+    <article class="benefit">
+      <span class="benefit-icon icon-teal" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z"/><path d="M9 13h6v7H9zM12 15v2"/></svg>
+      </span>
+      <div><h2>Entrega autónoma</h2><p>Deposita y recoge paquetes sin coordinar horarios ni esperar en casa.</p></div>
+    </article>
+    <article class="benefit">
+      <span class="benefit-icon icon-blue" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 19V10m7 9V5m7 14v-6"/><path d="M3 19h18"/></svg>
+      </span>
+      <div><h2>Seguimiento claro</h2><p>Consulta el estado de tus entregas y cuándo fueron depositadas o recogidas.</p></div>
+    </article>
+    <article class="benefit">
+      <span class="benefit-icon icon-amber" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3 20 6v5c0 5-3.4 8-8 10-4.6-2-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+      </span>
+      <div><h2>Más tranquilidad</h2><p>El locker registra su actividad para mantener informado a cada participante.</p></div>
+    </article>
+  </section>
+
+  <section class="how-it-works" id="como-funciona" aria-labelledby="steps-title">
+    <div class="section-heading">
+      <span class="eyebrow">SENCILLO PARA TODOS</span>
+      <h2 id="steps-title">Una entrega en tres pasos</h2>
+      <p>De la preparación a la recepción, cada etapa queda conectada.</p>
+    </div>
+    <div class="steps">
+      <article class="step">
+        <span class="step-number">01</span>
+        <div class="step-icon" aria-hidden="true">＋</div>
+        <h3>Se registra</h3>
+        <p>El depositante prepara la entrega y la asocia al locker y a su destinatario.</p>
+      </article>
+      <span class="step-connector" aria-hidden="true">········→</span>
+      <article class="step">
+        <span class="step-number">02</span>
+        <div class="step-icon" aria-hidden="true">⌂</div>
+        <h3>Se deposita</h3>
+        <p>Los sensores detectan la actividad y el sistema actualiza el estado del paquete.</p>
+      </article>
+      <span class="step-connector" aria-hidden="true">········→</span>
+      <article class="step">
+        <span class="step-number">03</span>
+        <div class="step-icon" aria-hidden="true">✓</div>
+        <h3>Se recoge</h3>
+        <p>El destinatario consulta el seguimiento y recoge su paquete cuando esté listo.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="closing-cta" aria-labelledby="cta-title">
+    <div><span class="eyebrow">LOCKERGO · ENTREGAS CONECTADAS</span><h2 id="cta-title">Empieza con una entrega más simple.</h2></div>
+    <a class="button button-light" routerLink="/login">Iniciar sesión <span aria-hidden="true">→</span></a>
+  </section>
+
+  <footer class="site-footer">
+    <a class="brand footer-brand" routerLink="/" aria-label="LockerGo, inicio">
+      <span class="brand-symbol" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none"><path d="M5.5 13 16 6.5 26.5 13v13H5.5V13Z"/><path d="M11 15h10v11H11zM14 18h4"/></svg>
+      </span>
+      <span class="brand-name">Locker<span>Go</span></span>
+    </a>
+    <span>Una forma más simple de mover tus entregas.</span>
+    <span>© LockerGo 2026</span>
+  </footer>
+</main>

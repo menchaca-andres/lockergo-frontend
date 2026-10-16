@@ -87,7 +87,7 @@
                 <time>{{ item.depositedAt | date:'medium' }}</time>
               </div>
               <div class="package-card-bottom">
-                <span class="size-tag">Talla {{ item.estimatedSize || '—' }}</span>
+                <span class="size-tag">{{ item.estimatedHeightCm === null ? 'Sin medida' : item.estimatedHeightCm + ' cm' }}</span>
                 <a [routerLink]="['/app/lockers', item.locker.id_locker]">Ver locker <span aria-hidden="true">→</span></a>
               </div>
             </article>

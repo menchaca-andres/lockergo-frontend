@@ -14,6 +14,7 @@ export interface LockerPackage {
   lockerId: number;
   status: PackageStatus;
   estimatedSize: PackageSize | null;
+  estimatedHeightCm: number | null;
   depositedAt: string | null;
   pickedUpAt: string | null;
   createdAt: string;
@@ -25,7 +26,7 @@ export interface LockerPackage {
 export interface PackageLiveUpdate {
   package: Pick<
     LockerPackage,
-    'id_package' | 'code' | 'status' | 'estimatedSize' | 'depositedAt' | 'pickedUpAt'
+    'id_package' | 'code' | 'status' | 'estimatedSize' | 'estimatedHeightCm' | 'depositedAt' | 'pickedUpAt'
   >;
   event: { type: 'PACKAGE_DEPOSITED' | 'PACKAGE_PICKED_UP'; createdAt: string };
 }
@@ -55,7 +56,6 @@ export interface AdminDashboardOverview {
     count: number;
   }>;
   packagesByStatus: Array<{ status: PackageStatus; count: number }>;
-  packageSizeDistribution: Array<{ size: PackageSize | null; count: number }>;
   packageMeasurements: Array<{
     packageCode: string;
     lockerCode: string;
@@ -82,7 +82,19 @@ export interface AdminDashboardOverview {
     component: { key: string; name: string } | null;
     package: { id_package: number; code: string; status: PackageStatus } | null;
   }>;
-  recentPackages: LockerPackage[];
+  recentPackages: Array<{
+    id_package: number;
+    code: string;
+    status: PackageStatus;
+    estimatedSize: PackageSize | null;
+    estimatedHeightCm: number | null;
+    createdAt: string;
+    depositedAt: string | null;
+    pickedUpAt: string | null;
+    locker: Pick<Locker, 'id_locker' | 'code' | 'name'>;
+    client: { id_user: number; name: string };
+    depositor: { id_user: number; name: string };
+  }>;
 }
 
 @Injectable({ providedIn: 'root' })

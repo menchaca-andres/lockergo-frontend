@@ -89,7 +89,11 @@ export interface LockerAnalytics {
   doorByDay: Array<{ day: string; opened: number; closed: number }>;
   activityHeatmap: Array<{ dayOfWeek: number; hour: number; count: number }>;
   infraredDetectionsWithDoorClosed: number;
-  packageSizeDistribution: Array<{ size: 'S' | 'M' | 'L'; count: number }>;
+  packageMeasurements: Array<{
+    packageCode: string;
+    estimatedHeightCm: number;
+    recordedAt: string;
+  }>;
   liveDistance: Array<{
     componentId: number;
     key: string;

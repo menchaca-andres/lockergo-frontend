@@ -1,0 +1,134 @@
+<section class="dashboard-content" aria-labelledby="dashboard-title">
+  <div class="page-intro">
+    <div>
+      <p class="eyebrow">TU ESPACIO LOCKERGO</p>
+      <h1 id="dashboard-title">Hola, {{ auth.user()?.name }}.</h1>
+      <p>Consulta el estado de tu locker y sigue tus entregas.</p>
+    </div>
+    <div class="live-indicator" [class.live]="liveStatus() === 'LIVE'" role="status">
+      <span class="live-dot" aria-hidden="true"></span>
+      {{ liveStatus() === 'LIVE' ? 'Estado en vivo' : 'Conectando en vivo' }}
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="state-card" role="status"><span class="loader"></span><span>Cargando tus paquetes…</span></div>
+  } @else if (error()) {
+    <div class="state-card error-state" role="alert">
+      <p>{{ error() }}</p>
+      <button class="button-secondary" type="button" (click)="retry()">Reintentar</button>
+    </div>
+  } @else {
+    <section class="summary-grid" aria-label="Resumen de tus paquetes">
+      <article class="glass-card summary-card pending-summary">
+        <span class="summary-icon" aria-hidden="true">□</span>
+        <span class="summary-label">Por retirar</span>
+        <strong>{{ pendingPackages.length }}</strong>
+        <small>Paquetes guardados en el locker</small>
+      </article>
+      <article class="glass-card summary-card preparing-summary">
+        <span class="summary-icon" aria-hidden="true">◷</span>
+        <span class="summary-label">En preparación</span>
+        <strong>{{ preparingPackages.length }}</strong>
+        <small>Registrados, aún no depositados</small>
+      </article>
+      <article class="glass-card summary-card picked-summary">
+        <span class="summary-icon" aria-hidden="true">✓</span>
+        <span class="summary-label">Recogidos</span>
+        <strong>{{ pickedUpPackages.length }}</strong>
+        <small>En tu historial</small>
+      </article>
+    </section>
+
+    <section class="panel-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">ACCESO Y CONDICIÓN</p><h2>Mis lockers</h2></div>
+        <span class="section-count">{{ lockers().length }}</span>
+      </div>
+      @if (lockers().length > 0) {
+        <div class="locker-grid">
+          @for (locker of lockers(); track locker.id_locker) {
+            <a class="glass-card locker-card" [routerLink]="['/app/lockers', locker.id_locker]">
+              <div class="locker-card-top">
+                <span class="locker-symbol" aria-hidden="true">⌂</span>
+                <span class="status-pill" [class.offline]="locker.deviceStatus !== 'ONLINE'">
+                  <i></i>
+                  {{ locker.deviceStatus === 'ONLINE' ? 'En línea' : locker.deviceStatus === 'NO_DEVICE' ? 'Sin dispositivo' : 'Desconectado' }}
+                </span>
+              </div>
+              <span class="locker-code">{{ locker.code }}</span>
+              <h3>{{ locker.name }}</h3>
+              <p>{{ locker.location || 'Ubicación no especificada' }}</p>
+              <span class="locker-link">Ver estado y actividad <b aria-hidden="true">→</b></span>
+            </a>
+          }
+        </div>
+      } @else {
+        <div class="empty-card"><span aria-hidden="true">⌂</span><h3>Aún no tienes lockers</h3><p>Cuando recibas un paquete, el locker asociado aparecerá aquí.</p></div>
+      }
+    </section>
+
+    <section class="panel-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">LISTOS PARA TI</p><h2>Paquetes por retirar</h2></div>
+        <span class="section-count">{{ pendingPackages.length }}</span>
+      </div>
+      @if (pendingPackages.length > 0) {
+        <div class="package-grid">
+          @for (item of pendingPackages; track item.id_package) {
+            <article class="glass-card package-card">
+              <div class="package-card-top">
+                <span class="package-code">{{ item.code }}</span>
+                <span class="status-tag">Pendiente</span>
+              </div>
+              <p class="package-locker">{{ item.locker.name }} <span>· {{ item.locker.code }}</span></p>
+              <div class="package-meta">
+                <span>Depositado</span>
+                <time>{{ item.depositedAt | date:'medium' }}</time>
+              </div>
+              <div class="package-card-bottom">
+                <span class="size-tag">Talla {{ item.estimatedSize || '—' }}</span>
+                <a [routerLink]="['/app/lockers', item.locker.id_locker]">Ver locker <span aria-hidden="true">→</span></a>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <div class="empty-card"><span aria-hidden="true">□</span><h3>No tienes paquetes pendientes</h3><p>Cuando depositen uno para ti, aparecerá aquí automáticamente.</p></div>
+      }
+    </section>
+
+    @if (preparingPackages.length > 0) {
+      <section class="panel-section">
+        <div class="section-heading"><div><p class="eyebrow">PRÓXIMAMENTE</p><h2>En preparación</h2></div></div>
+        <div class="package-grid">
+          @for (item of preparingPackages; track item.id_package) {
+            <article class="glass-card package-card preparing-card">
+              <div class="package-card-top"><span class="package-code">{{ item.code }}</span><span class="status-tag preparing-tag">Por depositar</span></div>
+              <p class="package-locker">{{ item.locker.name }} <span>· {{ item.locker.code }}</span></p>
+              <p class="preparing-copy">Recibirás una actualización cuando el paquete esté dentro del locker.</p>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    <section class="panel-section history-section">
+      <div class="section-heading"><div><p class="eyebrow">HISTORIAL</p><h2>Paquetes recogidos</h2></div></div>
+      @if (pickedUpPackages.length > 0) {
+        <div class="glass-card history-list">
+          @for (item of pickedUpPackages; track item.id_package) {
+            <div class="history-row">
+              <span class="history-check" aria-hidden="true">✓</span>
+              <div class="history-main"><strong>{{ item.code }}</strong><span>{{ item.locker.name }} · {{ item.locker.code }}</span></div>
+              <time>{{ item.pickedUpAt | date:'medium' }}</time>
+              <span class="status-tag picked-tag">Recogido</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-card compact-empty"><p>Tu historial de retiros aparecerá aquí.</p></div>
+      }
+    </section>
+  }
+</section>

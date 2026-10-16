@@ -32,7 +32,7 @@ export class AdminComponent implements OnInit {
   private readonly router = inject(Router);
 
   lockerDraft = { code: '', name: '', location: '' };
-  userDraft = { name: '', email: '', password: '', role: 'USER' as AdminRole };
+  userDraft = { name: '', email: '', password: '', role: 'CLIENTE' as AdminRole };
 
   ngOnInit(): void {
     this.loadData();
@@ -115,7 +115,7 @@ export class AdminComponent implements OnInit {
     this.clearMessages();
     this.api.createUser(this.userDraft).subscribe({
       next: () => {
-        this.userDraft = { name: '', email: '', password: '', role: 'USER' };
+        this.userDraft = { name: '', email: '', password: '', role: 'CLIENTE' };
         this.notice.set('Usuario creado.');
         this.loadData();
         this.saving.set(false);

@@ -1,88 +1,49 @@
-<main class="dashboard">
-  <header>
+<main class="dashboard-shell">
+  <header class="topbar">
     <a class="brand" routerLink="/app/dashboard" aria-label="LockerGo inicio">
       <span class="brand-mark" aria-hidden="true">L</span>
-      <span>Locker<span class="brand-accent">Go</span></span>
+      <span class="brand-name">Locker<span>Go</span></span>
     </a>
-    <div class="header-actions">
+    <div class="topbar-actions">
       @if (auth.user()?.role === 'ADMIN') {
         <a class="admin-link" routerLink="/app/admin">Administración</a>
       }
-      @if (logoutError()) {
-        <p class="error" role="alert">{{ logoutError() }}</p>
-      }
-      <button type="button" (click)="logout()" [disabled]="signingOut()">
-        {{ signingOut() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+      <span class="user-chip"><span class="user-avatar" aria-hidden="true">{{ auth.user()?.name?.slice(0, 1) || 'U' }}</span>{{ auth.user()?.name }}</span>
+      <button
+        type="button"
+        class="icon-button theme-button"
+        [attr.aria-pressed]="darkMode()"
+        [attr.aria-label]="darkMode() ? 'Activar modo claro' : 'Activar modo oscuro'"
+        (click)="toggleTheme()"
+      >{{ darkMode() ? '☼' : '◐' }}<span>{{ darkMode() ? 'Claro' : 'Oscuro' }}</span></button>
+      <button type="button" class="logout-button" (click)="logout()" [disabled]="signingOut()">
+        {{ signingOut() ? 'Saliendo…' : 'Cerrar sesión' }}
       </button>
     </div>
   </header>
+  @if (logoutError()) {
+    <p class="logout-error" role="alert">{{ logoutError() }}</p>
+  }
 
-  <section class="dashboard-content">
-    <div class="welcome">
-      <p class="eyebrow">{{ auth.user()?.role === 'ADMIN' ? 'PANEL DE ADMINISTRACIÓN' : 'ESPACIO PERSONAL' }}</p>
-      <h1>Hola, {{ auth.user()?.name }}.</h1>
-      <p>{{ auth.user()?.role === 'ADMIN' ? 'Aquí tienes un resumen de los lockers registrados.' : 'Estos son los lockers que tienes asignados.' }}</p>
-    </div>
-
-    <div class="section-heading">
-      <div>
-        <h2>Lockers</h2>
-        @if (!loadingLockers() && !lockersError()) {
-          <p>{{ lockers().length }} {{ lockers().length === 1 ? 'locker' : 'lockers' }}</p>
-        }
-      </div>
-      @if (lockersError()) {
-        <button type="button" class="secondary-button" (click)="loadLockers()">Reintentar</button>
-      }
-    </div>
-
-    <div class="locker-list" [attr.aria-busy]="loadingLockers()">
-      @if (loadingLockers()) {
-        <div class="state-card" role="status">
-          <span class="loader" aria-hidden="true"></span>
-          <span>Cargando lockers…</span>
-        </div>
-      } @else if (lockersError()) {
-        <div class="state-card error-state" role="alert">{{ lockersError() }}</div>
-      } @else if (lockers().length === 0) {
-        <div class="state-card empty-state">
-          <span class="empty-icon" aria-hidden="true">⌂</span>
-          <h3>Aún no hay lockers</h3>
-          <p>{{ auth.user()?.role === 'ADMIN' ? 'Cuando registres un locker, aparecerá aquí.' : 'Cuando te asignen un locker, aparecerá aquí.' }}</p>
-        </div>
-      } @else {
-        <div class="locker-grid">
-          @for (locker of lockers(); track locker.id_locker) {
-            <a class="locker-card" [routerLink]="['/app/lockers', locker.id_locker]">
-              <div class="locker-card-top">
-                <span class="locker-icon" aria-hidden="true">⌂</span>
-                <span class="status" [class.inactive]="locker.deviceStatus !== 'ONLINE'">
-                  <span class="status-dot" aria-hidden="true"></span>
-                  @if (locker.deviceStatus === 'NO_DEVICE') {
-                    Sin dispositivo
-                  } @else if (locker.deviceStatus === 'ONLINE') {
-                    {{ locker.onlineDeviceCount }}/{{ locker.deviceCount }} en línea
-                  } @else if (locker.deviceStatus === 'INACTIVE') {
-                    Dispositivo inactivo
-                  } @else {
-                    Sin conexión
-                  }
-                </span>
-              </div>
-              <p class="locker-code">{{ locker.code }}</p>
-              <h3>{{ locker.name }}</h3>
-              <p class="locker-location">{{ locker.location || 'Ubicación no especificada' }}</p>
-              @if (!locker.isActive) {
-                <p class="locker-offline">Locker inactivo</p>
-              } @else if (locker.lastSeenAt) {
-                <p class="locker-last-seen">Último contacto: {{ locker.lastSeenAt | date:'short' }}</p>
-              } @else if (locker.deviceCount > 0) {
-                <p class="locker-last-seen">Aún no hay lecturas recibidas</p>
-              }
-            </a>
-          }
-        </div>
-      }
-    </div>
-  </section>
+  @if (auth.user()?.role === 'ADMIN') {
+    @defer (on immediate) {
+      <app-admin-dashboard />
+    } @placeholder {
+      <div class="dashboard-loading" role="status"><span class="loader"></span><span>Preparando dashboard…</span></div>
+    }
+  } @else if (auth.user()?.role === 'CLIENTE') {
+    @defer (on immediate) {
+      <app-client-dashboard />
+    } @placeholder {
+      <div class="dashboard-loading" role="status"><span class="loader"></span><span>Preparando tu espacio…</span></div>
+    }
+  } @else if (auth.user()?.role === 'DEPOSITANTE') {
+    @defer (on immediate) {
+      <app-depositor-dashboard />
+    } @placeholder {
+      <div class="dashboard-loading" role="status"><span class="loader"></span><span>Preparando seguimiento…</span></div>
+    }
+  } @else {
+    <div class="dashboard-loading" role="status"><span class="loader"></span><span>Cargando tu espacio…</span></div>
+  }
 </main>

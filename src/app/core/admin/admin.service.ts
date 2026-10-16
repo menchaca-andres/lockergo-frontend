@@ -5,7 +5,7 @@ import { Locker } from '../lockers/lockers.service';
 
 const API = 'http://localhost:4000/api';
 
-export type AdminRole = 'ADMIN' | 'USER';
+export type AdminRole = 'ADMIN' | 'CLIENTE' | 'DEPOSITANTE';
 
 export interface ManagedUser {
   id_user: number;

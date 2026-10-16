@@ -116,13 +116,14 @@
                       <td><strong>{{ user.name }}</strong><small>{{ user.email }}</small></td>
                       <td>
                         <select aria-label="Rol de {{ user.name }}" [value]="user.role" [disabled]="saving() || isCurrentUser(user)" (change)="changeRole(user, $any($event.target).value)">
-                          <option value="USER">Usuario</option>
+                          <option value="CLIENTE">Cliente</option>
+                          <option value="DEPOSITANTE">Depositante</option>
                           <option value="ADMIN">Administrador</option>
                         </select>
                       </td>
                       <td><span class="badge" [class.inactive]="!user.isActive">{{ user.isActive ? 'Activo' : 'Inactivo' }}</span></td>
                       <td class="actions">
-                        @if (user.role === 'USER') {
+                        @if (user.role === 'CLIENTE') {
                           <button type="button" class="text-button" (click)="manageAssignments(user)">Asignaciones</button>
                         }
                         <button type="button" class="text-button" [disabled]="saving() || isCurrentUser(user)" (click)="toggleUser(user)">
@@ -149,7 +150,8 @@
             <input id="user-password" name="password" type="password" [(ngModel)]="userDraft.password" required minlength="12" autocomplete="new-password">
             <label for="user-role">Rol</label>
             <select id="user-role" name="role" [(ngModel)]="userDraft.role">
-              <option value="USER">Usuario</option>
+              <option value="CLIENTE">Cliente</option>
+              <option value="DEPOSITANTE">Depositante</option>
               <option value="ADMIN">Administrador</option>
             </select>
             <button type="submit" class="button button-primary full-width" [disabled]="userForm.invalid || saving()">

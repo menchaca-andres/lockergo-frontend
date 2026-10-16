@@ -1,0 +1,129 @@
+<section class="dashboard-content" aria-labelledby="dashboard-title">
+  <div class="page-intro">
+    <div>
+      <p class="eyebrow">PORTAL DE OPERACIONES</p>
+      <h1 id="dashboard-title">Hola, {{ auth.user()?.name }}.</h1>
+      <p>Pre-registra entregas y consulta el ciclo de cada paquete.</p>
+    </div>
+    <div class="live-indicator" [class.live]="liveStatus() === 'LIVE'" role="status">
+      <span class="live-dot" aria-hidden="true"></span>
+      {{ liveStatus() === 'LIVE' ? 'Paquetes en vivo' : 'Conectando en vivo' }}
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="state-card" role="status"><span class="loader"></span><span>Cargando tus paquetes…</span></div>
+  } @else if (error()) {
+    <div class="state-card error-state" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="button-secondary" (click)="retry()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="depositor-layout">
+      <div class="main-column">
+        <section class="summary-grid" aria-label="Resumen de paquetes">
+          <article class="glass-card summary-card">
+            <span class="summary-label">Paquetes registrados</span>
+            <strong>{{ packages().length }}</strong>
+            <span class="summary-icon" aria-hidden="true">□</span>
+          </article>
+          <article class="glass-card summary-card">
+            <span class="summary-label">Pendientes / en proceso</span>
+            <strong>{{ pendingCount }}</strong>
+            <span class="summary-icon amber-icon" aria-hidden="true">◷</span>
+          </article>
+          <article class="glass-card summary-card">
+            <span class="summary-label">Recogidos</span>
+            <strong>{{ pickedUpCount }}</strong>
+            <span class="summary-icon green-icon" aria-hidden="true">✓</span>
+          </article>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <div><p class="eyebrow">SEGUIMIENTO</p><h2>Paquetes que entregaste</h2></div>
+            <span class="section-count">{{ packages().length }}</span>
+          </div>
+          @if (packages().length > 0) {
+            <div class="package-grid">
+              @for (item of packages(); track item.id_package) {
+                <article class="glass-card package-card">
+                  <div class="package-top">
+                    <div><span class="eyebrow">CÓDIGO DE ENVÍO</span><h3>{{ item.code }}</h3></div>
+                    <span class="status-tag" [class.picked]="item.status === 'PICKED_UP'">
+                      {{ item.status === 'PICKED_UP' ? 'Recogido' : item.depositedAt ? 'Pendiente' : 'Por depositar' }}
+                    </span>
+                  </div>
+                  <div class="package-info">
+                    <span>Destinatario</span><strong>{{ item.client.name }}</strong>
+                    <span>Locker asignado</span><strong>{{ item.locker.name }} · {{ item.locker.code }}</strong>
+                    <span>Registrado</span><time>{{ item.createdAt | date:'medium' }}</time>
+                    <span>Depositado</span><time>{{ item.depositedAt ? (item.depositedAt | date:'medium') : 'Aún no depositado' }}</time>
+                    <span>Recogido</span><time>{{ item.pickedUpAt ? (item.pickedUpAt | date:'medium') : 'Pendiente' }}</time>
+                  </div>
+                  @if (item.estimatedSize) {
+                    <div class="size-note">Talla estimada <strong>{{ item.estimatedSize }}</strong></div>
+                  }
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="empty-card"><span aria-hidden="true">□</span><h3>Aún no has registrado paquetes</h3><p>Completa el formulario para iniciar el seguimiento de una entrega.</p></div>
+          }
+        </section>
+      </div>
+
+      <aside class="glass-card form-card">
+        <p class="eyebrow">NUEVA ENTREGA</p>
+        <h2>Pre-registra un paquete</h2>
+        <p class="form-description">El paquete se asociará a su destinatario cuando cierres el locker con el sensor de presencia activo.</p>
+        @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
+        @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
+        <form (ngSubmit)="submit()">
+          <label for="package-code">Código del paquete</label>
+          <input
+            id="package-code"
+            name="code"
+            type="text"
+            autocomplete="off"
+            maxlength="100"
+            pattern="[A-Za-z0-9][A-Za-z0-9_-]*"
+            required
+            [(ngModel)]="draft.code"
+            placeholder="p. ej. LG-2026-1042"
+          >
+          <label for="package-client">Correo del destinatario</label>
+          <input
+            id="package-client"
+            name="clientEmail"
+            type="email"
+            autocomplete="email"
+            maxlength="254"
+            required
+            [(ngModel)]="draft.clientEmail"
+            placeholder="cliente@empresa.com"
+          >
+          <label for="package-locker">Locker de destino</label>
+          <select
+            id="package-locker"
+            name="lockerId"
+            required
+            [(ngModel)]="draft.lockerId"
+          >
+            <option value="" disabled>Selecciona un locker activo</option>
+            @for (locker of lockers(); track locker.id_locker) {
+              <option [value]="locker.id_locker">{{ locker.code }} · {{ locker.name }}</option>
+            }
+          </select>
+          @if (lockers().length === 0) {
+            <small class="no-lockers">No hay lockers activos disponibles en este momento.</small>
+          }
+          <button type="submit" [disabled]="saving() || lockers().length === 0">
+            {{ saving() ? 'Registrando…' : 'Registrar paquete' }}
+          </button>
+        </form>
+        <div class="form-footnote"><span aria-hidden="true">i</span><p>El sistema confirmará el depósito y el retiro cuando la puerta se cierre y el FC-51 informe si hay paquete.</p></div>
+      </aside>
+    </div>
+  }
+</section>

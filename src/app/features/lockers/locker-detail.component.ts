@@ -1,9 +1,13 @@
 import { DatePipe, JsonPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
+import type { ChartConfiguration, ChartData } from 'chart.js';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { AuthService } from '../../core/auth/auth.service';
 import {
+  LockerAnalytics,
   LockerDetailService,
   LockerDetailState,
   LockerEvent,
@@ -11,10 +15,13 @@ import {
 } from '../../core/lockers/locker-detail.service';
 import { DeviceStatus } from '../../core/lockers/lockers.service';
 
+const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
 @Component({
   selector: 'app-locker-detail',
   standalone: true,
-  imports: [DatePipe, JsonPipe, RouterLink],
+  imports: [BaseChartDirective, DatePipe, JsonPipe, RouterLink],
+  providers: [provideCharts(withDefaultRegisterables())],
   templateUrl: './locker-detail.component.html',
   styleUrl: './locker-detail.component.scss'
 })
@@ -22,10 +29,63 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
   readonly state = signal<LockerDetailState | null>(null);
   readonly readings = signal<Reading[]>([]);
   readonly events = signal<LockerEvent[]>([]);
+  readonly analytics = signal<LockerAnalytics | null>(null);
   readonly loading = signal(true);
   readonly pageError = signal('');
   readonly activityError = signal('');
+  readonly analyticsLoading = signal(true);
+  readonly analyticsError = signal('');
   readonly streamStatus = signal<'CONNECTING' | 'LIVE' | 'RECONNECTING' | 'UNAVAILABLE'>('CONNECTING');
+  readonly isAdmin = computed(() => this.auth.user()?.role === 'ADMIN');
+  readonly days = DAY_LABELS;
+  readonly hours = Array.from({ length: 24 }, (_value, hour) => hour);
+  readonly doorChartData = computed<ChartData<'bar'>>(() => {
+    const days = this.analytics()?.doorByDay ?? [];
+    return {
+      labels: days.map(({ day }) => day.slice(5)),
+      datasets: [
+        {
+          label: 'Aperturas',
+          data: days.map(({ opened }) => opened),
+          backgroundColor: '#168b7e',
+          borderRadius: 5
+        },
+        {
+          label: 'Cierres',
+          data: days.map(({ closed }) => closed),
+          backgroundColor: '#8eaaa5',
+          borderRadius: 5
+        }
+      ]
+    };
+  });
+  readonly sizeChartData = computed<ChartData<'doughnut'>>(() => {
+    const distribution = this.analytics()?.packageSizeDistribution ?? [];
+    return {
+      labels: distribution.map(({ size }) => `Talla ${size}`),
+      datasets: [{
+        data: distribution.map(({ count }) => count),
+        backgroundColor: ['#168b7e', '#e2a542', '#597b9b'],
+        borderWidth: 0
+      }]
+    };
+  });
+  readonly doorChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(120, 145, 146, .16)' } }
+    }
+  };
+  readonly sizeChartOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '68%',
+    plugins: { legend: { position: 'bottom' } }
+  };
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(LockerDetailService);
   private lockerId = 0;
@@ -70,6 +130,31 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
     return 'Sin valor';
   }
 
+  doorOpenings(): number {
+    return (this.analytics()?.doorByDay ?? []).reduce((total, day) => total + day.opened, 0);
+  }
+
+  heatCount(dayOfWeek: number, hour: number): number {
+    return this.analytics()?.activityHeatmap.find(
+      (cell) => cell.dayOfWeek === dayOfWeek && cell.hour === hour
+    )?.count ?? 0;
+  }
+
+  heatColor(dayOfWeek: number, hour: number): string {
+    const cells = this.analytics()?.activityHeatmap ?? [];
+    const max = Math.max(1, ...cells.map((cell) => cell.count));
+    const opacity = 0.1 + (this.heatCount(dayOfWeek, hour) / max) * 0.9;
+    return `rgba(22, 139, 126, ${opacity})`;
+  }
+
+  packageHeightPercent(heightCm: number | null): number {
+    return heightCm === null ? 0 : Math.max(0, Math.min(100, (heightCm / 20) * 100));
+  }
+
+  retryAnalytics(): void {
+    this.loadAnalytics();
+  }
+
   deviceStatusLabel(status: DeviceStatus | 'INACTIVE'): string {
     switch (status) {
       case 'ONLINE': return 'En línea';
@@ -93,6 +178,7 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
         this.loading.set(false);
         this.activityError.set('');
         this.connectStream();
+        this.loadAnalytics();
         if (!this.statusTimer) {
           this.statusTimer = setInterval(() => this.refreshState(), 30_000);
         }
@@ -162,6 +248,7 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
         this.readings.set(readings.readings);
         this.events.set(events.events);
         this.activityError.set('');
+        this.loadAnalytics();
       },
       error: (error: unknown) => {
         if (this.destroyed) return;
@@ -173,10 +260,33 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
   private refreshState(): void {
     this.api.state(this.lockerId).subscribe({
       next: (state) => {
-        if (!this.destroyed) this.state.set(state);
+        if (!this.destroyed) {
+          this.state.set(state);
+          this.loadAnalytics();
+        }
       },
       error: (error: unknown) => {
         if (!this.destroyed) this.activityError.set(this.errorMessage(error, 'No se pudo actualizar el estado.'));
+      }
+    });
+  }
+
+  private loadAnalytics(): void {
+    if (!this.isAdmin()) {
+      this.analyticsLoading.set(false);
+      return;
+    }
+    this.api.analytics(this.lockerId).subscribe({
+      next: (analytics) => {
+        if (this.destroyed) return;
+        this.analytics.set(analytics);
+        this.analyticsError.set('');
+        this.analyticsLoading.set(false);
+      },
+      error: (error: unknown) => {
+        if (this.destroyed) return;
+        this.analyticsError.set(this.errorMessage(error, 'No se pudo cargar la analítica del locker.'));
+        this.analyticsLoading.set(false);
       }
     });
   }

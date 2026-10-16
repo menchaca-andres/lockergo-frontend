@@ -1,0 +1,223 @@
+<section class="dashboard-content" aria-labelledby="dashboard-title">
+  <div class="page-intro">
+    <div>
+      <p class="eyebrow">VISTA GLOBAL · ADMINISTRACIÓN</p>
+      <h1 id="dashboard-title">Control de operaciones</h1>
+      <p>Estado de lockers y actividad de los últimos 30 días.</p>
+    </div>
+    <div class="live-indicator" [class.live]="liveStatus() === 'LIVE'" role="status">
+      <span class="live-dot" aria-hidden="true"></span>
+      {{ liveStatus() === 'LIVE' ? 'Actualización en vivo' : 'Conectando en vivo' }}
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="state-card" role="status">
+      <span class="loader" aria-hidden="true"></span>
+      <span>Cargando métricas de la plataforma…</span>
+    </div>
+  } @else if (error()) {
+    <div class="state-card error-state" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="button-secondary" (click)="retry()">Reintentar</button>
+    </div>
+  } @else if (overview(); as data) {
+    <section class="kpi-grid" aria-label="Indicadores principales">
+      <article class="glass-card kpi-card">
+        <span class="kpi-label">Lockers en línea</span>
+        <strong>{{ data.kpis.lockersOnline }}</strong>
+        <span class="kpi-hint">de {{ data.kpis.lockersWithActiveDevices }} con dispositivo activo</span>
+        <span class="kpi-icon online-icon" aria-hidden="true">●</span>
+      </article>
+      <article class="glass-card kpi-card">
+        <span class="kpi-label">Puertas abiertas</span>
+        <strong>{{ data.kpis.doorsOpenNow }}</strong>
+        <span class="kpi-hint">estado actual reportado</span>
+        <span class="kpi-icon warning-icon" aria-hidden="true">↗</span>
+      </article>
+      <article class="glass-card kpi-card">
+        <span class="kpi-label">Paquetes pendientes</span>
+        <strong>{{ data.kpis.pendingPackages }}</strong>
+        <span class="kpi-hint">depositados y por retirar</span>
+        <span class="kpi-icon package-icon" aria-hidden="true">□</span>
+      </article>
+      <article class="glass-card kpi-card">
+        <span class="kpi-label">Aperturas de hoy</span>
+        <strong>{{ data.kpis.doorOpeningsToday }}</strong>
+        <span class="kpi-hint">desde las 00:00 UTC</span>
+        <span class="kpi-icon activity-icon" aria-hidden="true">⌁</span>
+      </article>
+    </section>
+
+    <section class="main-grid">
+      <article class="glass-card heatmap-card">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">MOVIMIENTO · 30 DÍAS</p>
+            <h2>Actividad por día y hora</h2>
+          </div>
+          <span class="unit-label">Aperturas · UTC</span>
+        </div>
+        <div class="heatmap-scroll" role="region" aria-label="Mapa de calor de aperturas por día y hora" tabindex="0">
+          <div class="heatmap">
+            <div class="heat-row heat-header" role="row">
+              <span class="day-label"></span>
+              @for (hour of hours; track hour) {
+                <span class="hour-label">{{ hour % 2 === 0 ? hour : '' }}</span>
+              }
+            </div>
+            @for (day of days; track $index) {
+              <div class="heat-row" role="row">
+                <span class="day-label">{{ day }}</span>
+                @for (hour of hours; track hour) {
+                  <span
+                    class="heat-cell"
+                    role="gridcell"
+                    [style.background-color]="heatBackground($index, hour)"
+                    [style.color]="heatTextColor($index, hour)"
+                    [attr.aria-label]="day + ', ' + hour + ':00 UTC: ' + heatCount($index, hour) + ' aperturas'"
+                    [title]="day + ', ' + hour + ':00 UTC · ' + heatCount($index, hour) + ' aperturas'"
+                  >{{ heatCount($index, hour) || '' }}</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <div class="heat-legend"><span>Menos actividad</span><i></i><i></i><i></i><i></i><span>Más</span></div>
+      </article>
+
+      <article class="glass-card chart-card">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">RANKING · 30 DÍAS</p>
+            <h2>Lockers con más movimiento</h2>
+          </div>
+          <span class="unit-label">Aperturas</span>
+        </div>
+        @if (data.lockerRanking.length > 0) {
+          <div class="chart-wrap ranking-chart">
+            <canvas
+              baseChart
+              [type]="'bar'"
+              [data]="rankingData()"
+              [options]="rankingOptions"
+              aria-label="Aperturas por locker"
+            ></canvas>
+          </div>
+        } @else {
+          <p class="inline-empty">Todavía no hay aperturas en este periodo.</p>
+        }
+      </article>
+    </section>
+
+    <section class="lower-grid">
+      <article class="glass-card chart-card package-chart-card">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">INVENTARIO</p>
+            <h2>Paquetes por estado</h2>
+          </div>
+        </div>
+        @if (data.packagesByStatus.length > 0) {
+          <div class="chart-wrap doughnut-chart">
+            <canvas
+              baseChart
+              [type]="'doughnut'"
+              [data]="packageData()"
+              [options]="packageOptions"
+              aria-label="Distribución de paquetes pendientes y recogidos"
+            ></canvas>
+          </div>
+        } @else {
+          <p class="inline-empty">Aún no hay paquetes registrados.</p>
+        }
+      </article>
+
+      <article class="glass-card alert-card">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">ATENCIÓN</p>
+            <h2>Alertas</h2>
+          </div>
+          <span class="count-pill" [class.has-alerts]="hasAlerts()">{{ data.alerts.length }}</span>
+        </div>
+        @if (data.alerts.length > 0) {
+          <ul class="alert-list">
+            @for (alert of data.alerts.slice(0, 6); track $index) {
+              <li>
+                <span class="alert-mark" [class.critical]="alert.severity === 'CRITICAL'" aria-hidden="true">!</span>
+                <span class="alert-copy">
+                  <strong>{{ alertLabel(alert.type) }}</strong>
+                  <small>{{ alert.locker.name }} · {{ alert.locker.code }}</small>
+                </span>
+                <time>{{ alert.occurredAt ? (alert.occurredAt | date:'short') : 'Sin contacto' }}</time>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="inline-empty">Sin alertas activas. Todo está en orden.</p>
+        }
+      </article>
+    </section>
+
+    <section class="lower-grid tables-grid">
+      <article class="glass-card table-card">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">EN TIEMPO REAL</p>
+            <h2>Eventos recientes</h2>
+          </div>
+        </div>
+        @if (data.recentEvents.length > 0) {
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Evento</th><th>Locker</th><th>Origen</th><th>Hora</th></tr></thead>
+              <tbody>
+                @for (event of data.recentEvents.slice(0, 8); track event.id_event) {
+                  <tr>
+                    <td><span class="event-badge" [class.badge-warning]="event.severity !== 'INFO'">{{ eventLabel(event.type) }}</span></td>
+                    <td><a [routerLink]="['/app/lockers', event.locker.id_locker]">{{ event.locker.code }}</a></td>
+                    <td>{{ event.package?.code || event.component?.name || 'Sistema' }}</td>
+                    <td><time>{{ event.createdAt | date:'short' }}</time></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="inline-empty">Los eventos aparecerán cuando los dispositivos reporten actividad.</p>
+        }
+      </article>
+
+      <article class="glass-card table-card">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">ÚLTIMOS REGISTROS</p>
+            <h2>Paquetes recientes</h2>
+          </div>
+        </div>
+        @if (data.recentPackages.length > 0) {
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Código</th><th>Locker</th><th>Estado</th><th>Talla</th></tr></thead>
+              <tbody>
+                @for (package of data.recentPackages; track package.id_package) {
+                  <tr>
+                    <td><strong>{{ package.code }}</strong></td>
+                    <td>{{ package.locker.code }}</td>
+                    <td><span class="status-tag" [class.picked-up]="package.status === 'PICKED_UP'">
+                      {{ package.status === 'PICKED_UP' ? 'Recogido' : package.depositedAt ? 'Pendiente' : 'Por depositar' }}
+                    </span></td>
+                    <td>{{ package.estimatedSize || '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="inline-empty">Todavía no hay paquetes registrados.</p>
+        }
+      </article>
+    </section>
+  }
+</section>

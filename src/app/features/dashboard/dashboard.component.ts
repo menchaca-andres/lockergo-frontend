@@ -1,54 +1,38 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
-import { LockerOverview, LockersService } from '../../core/lockers/lockers.service';
+import { AdminDashboardComponent } from './admin-dashboard.component';
+import { ClientDashboardComponent } from './client-dashboard.component';
+import { DepositorDashboardComponent } from './depositor-dashboard.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [DatePipe, RouterLink],
+  imports: [
+    AdminDashboardComponent,
+    ClientDashboardComponent,
+    DepositorDashboardComponent,
+    RouterLink
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent implements OnDestroy, OnInit {
+export class DashboardComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly signingOut = signal(false);
-  readonly lockers = signal<LockerOverview[]>([]);
-  readonly loadingLockers = signal(true);
-  readonly lockersError = signal('');
   readonly logoutError = signal('');
+  readonly darkMode = signal(false);
   private readonly router = inject(Router);
-  private readonly lockersService = inject(LockersService);
-  private overviewRefresh?: ReturnType<typeof setInterval>;
 
   ngOnInit(): void {
-    this.loadLockers();
-    this.overviewRefresh = setInterval(() => {
-      if (!this.loadingLockers()) this.loadLockers();
-    }, 30_000);
+    this.darkMode.set(localStorage.getItem('lockergo-theme') === 'dark');
+    this.applyTheme();
   }
 
-  ngOnDestroy(): void {
-    if (this.overviewRefresh) clearInterval(this.overviewRefresh);
-  }
-
-  loadLockers(): void {
-    this.loadingLockers.set(true);
-    this.lockersError.set('');
-    this.lockersService.list().subscribe({
-      next: (lockers) => this.lockers.set(lockers),
-      error: (error: unknown) => {
-        this.lockersError.set(
-          error instanceof HttpErrorResponse && error.status === 0
-            ? 'No se pudo conectar con LockerGo. Comprueba tu conexión e inténtalo de nuevo.'
-            : 'No se pudieron cargar tus lockers. Inténtalo de nuevo.'
-        );
-        this.loadingLockers.set(false);
-      },
-      complete: () => this.loadingLockers.set(false)
-    });
+  toggleTheme(): void {
+    this.darkMode.update((enabled) => !enabled);
+    localStorage.setItem('lockergo-theme', this.darkMode() ? 'dark' : 'light');
+    this.applyTheme();
   }
 
   logout(): void {
@@ -57,9 +41,13 @@ export class DashboardComponent implements OnDestroy, OnInit {
     this.auth.logout().subscribe({
       next: () => void this.router.navigateByUrl('/login'),
       error: () => {
-        this.logoutError.set('No se pudo confirmar el cierre de sesión. Comprueba tu conexión e inténtalo de nuevo.');
+        this.logoutError.set('No se pudo confirmar el cierre de sesión. Inténtalo de nuevo.');
         this.signingOut.set(false);
       }
     });
+  }
+
+  private applyTheme(): void {
+    document.documentElement.classList.toggle('theme-dark', this.darkMode());
   }
 }

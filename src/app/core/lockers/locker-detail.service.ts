@@ -74,6 +74,26 @@ export interface LockerDataFilters {
   limit?: number;
 }
 
+export interface LockerAnalytics {
+  locker: Pick<Locker, 'id_locker' | 'code' | 'name' | 'location'>;
+  range: { from: string; to: string; timezone: string };
+  doorByDay: Array<{ day: string; opened: number; closed: number }>;
+  activityHeatmap: Array<{ dayOfWeek: number; hour: number; count: number }>;
+  infraredDetectionsWithDoorClosed: number;
+  packageSizeDistribution: Array<{ size: 'S' | 'M' | 'L'; count: number }>;
+  liveDistance: Array<{
+    componentId: number;
+    key: string;
+    name: string;
+    unit: string | null;
+    measuredDistanceCm: number | null;
+    quality: string | null;
+    recordedAt: string | null;
+    emptyDistanceCm: number;
+    estimatedHeightCm: number | null;
+  }>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LockerDetailService {
   private readonly http = inject(HttpClient);
@@ -92,6 +112,10 @@ export class LockerDetailService {
     return this.http.get<{ events: LockerEvent[] }>(`${LOCKERS_API}/${id}/events`, {
       params: this.toParams(filters)
     });
+  }
+
+  analytics(id: number): Observable<LockerAnalytics> {
+    return this.http.get<LockerAnalytics>(`${LOCKERS_API}/${id}/analytics`);
   }
 
   streamTicket(id: number): Observable<{ ticket: string; expiresInSeconds: number }> {

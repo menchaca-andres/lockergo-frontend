@@ -32,6 +32,151 @@
         <p class="inline-error" role="alert">{{ activityError() }}</p>
       }
 
+      @if (isAdmin()) {
+        <section class="section analytics-section" aria-labelledby="analytics-heading">
+          <div class="section-heading">
+            <div>
+              <h2 id="analytics-heading">Analítica del locker</h2>
+              <p>Actividad, sensores y paquetes de los últimos 30 días.</p>
+            </div>
+            @if (analytics(); as report) {
+              <span class="range-label">{{ report.range.from | date:'mediumDate' }} — {{ report.range.to | date:'mediumDate' }}</span>
+            }
+          </div>
+
+          @if (analyticsError()) {
+            <div class="analytics-error" role="alert">
+              <span>{{ analyticsError() }}</span>
+              <button type="button" class="secondary-button" (click)="retryAnalytics()">Reintentar</button>
+            </div>
+          } @else if (analyticsLoading()) {
+            <div class="empty-card" role="status">Cargando analítica…</div>
+          } @else if (analytics(); as report) {
+            <div class="analytics-kpis">
+              <article class="analytics-kpi">
+                <span>Aperturas</span>
+                <strong>{{ doorOpenings() }}</strong>
+                <small>En el período seleccionado</small>
+              </article>
+              <article class="analytics-kpi">
+                <span>Detecciones IR</span>
+                <strong>{{ report.infraredDetectionsWithDoorClosed }}</strong>
+                <small>Con la puerta cerrada</small>
+              </article>
+              <article class="analytics-kpi">
+                <span>Sensores de distancia</span>
+                <strong>{{ report.liveDistance.length }}</strong>
+                <small>Lecturas actuales disponibles</small>
+              </article>
+            </div>
+
+            <div class="analytics-charts">
+              <article class="panel analytics-panel">
+                <div class="section-heading">
+                  <div><h3>Puerta por día</h3><p>Aperturas y cierres registrados.</p></div>
+                </div>
+                @if (report.doorByDay.length > 0) {
+                  <div class="chart-wrap">
+                    <canvas
+                      baseChart
+                      type="bar"
+                      [data]="doorChartData()"
+                      [options]="doorChartOptions"
+                      role="img"
+                      aria-label="Gráfico de aperturas y cierres por día"
+                    ></canvas>
+                  </div>
+                } @else {
+                  <div class="empty-card chart-empty">No hay actividad de puerta en este período.</div>
+                }
+              </article>
+
+              <article class="panel analytics-panel">
+                <div class="section-heading">
+                  <div><h3>Tallas depositadas</h3><p>Distribución de paquetes por tamaño.</p></div>
+                </div>
+                @if (report.packageSizeDistribution.length > 0) {
+                  <div class="chart-wrap donut-wrap">
+                    <canvas
+                      baseChart
+                      type="doughnut"
+                      [data]="sizeChartData()"
+                      [options]="sizeChartOptions"
+                      role="img"
+                      aria-label="Distribución de paquetes por talla"
+                    ></canvas>
+                  </div>
+                } @else {
+                  <div class="empty-card chart-empty">Aún no hay paquetes clasificados.</div>
+                }
+              </article>
+            </div>
+
+            <article class="panel heatmap-panel">
+              <div class="section-heading">
+                <div><h3>Mapa de actividad</h3><p>Aperturas por día de la semana y hora.</p></div>
+              </div>
+              <div class="heatmap-scroll">
+                <table class="heatmap-table">
+                  <thead>
+                    <tr><th>Día</th>@for (hour of hours; track hour) { <th>{{ hour }}</th> }</tr>
+                  </thead>
+                  <tbody>
+                    @for (day of days; track day; let dayIndex = $index) {
+                      <tr>
+                        <th scope="row">{{ day }}</th>
+                        @for (hour of hours; track hour) {
+                          <td
+                            [style.background-color]="heatColor(dayIndex, hour)"
+                            [attr.title]="day + ', ' + hour + ':00 — ' + heatCount(dayIndex, hour) + ' aperturas'"
+                            [attr.aria-label]="day + ', ' + hour + ':00 — ' + heatCount(dayIndex, hour) + ' aperturas'"
+                          >{{ heatCount(dayIndex, hour) || '' }}</td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="panel distance-panel">
+              <div class="section-heading">
+                <div><h3>Espacio estimado en vivo</h3><p>Altura del paquete frente al límite interno de 20 cm.</p></div>
+              </div>
+              @if (report.liveDistance.length > 0) {
+                <div class="distance-list">
+                  @for (sensor of report.liveDistance; track sensor.componentId) {
+                    <div class="distance-row">
+                      <div class="distance-title">
+                        <strong>{{ sensor.name }}</strong>
+                        <span [class.quality-error]="sensor.quality && sensor.quality !== 'OK'">
+                          {{ sensor.quality || 'Sin lectura' }}
+                        </span>
+                      </div>
+                      <div class="distance-meter" role="meter" aria-label="Altura estimada del paquete" aria-valuemin="0" aria-valuemax="20" [attr.aria-valuenow]="sensor.estimatedHeightCm">
+                        <span [style.width.%]="packageHeightPercent(sensor.estimatedHeightCm)"></span>
+                      </div>
+                      <div class="distance-meta">
+                        <span>
+                          @if (sensor.estimatedHeightCm !== null) {
+                            Objeto {{ sensor.estimatedHeightCm }} cm · Distancia {{ sensor.measuredDistanceCm }} {{ sensor.unit || 'cm' }}
+                          } @else {
+                            Sin lectura válida · {{ sensor.measuredDistanceCm ?? '—' }} {{ sensor.unit || 'cm' }}
+                          }
+                        </span>
+                        @if (sensor.recordedAt) { <time>{{ sensor.recordedAt | date:'short' }}</time> }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="empty-card">No hay sensores de distancia habilitados en este locker.</div>
+              }
+            </article>
+          }
+        </section>
+      }
+
       <section class="section">
         <div class="section-heading">
           <div>

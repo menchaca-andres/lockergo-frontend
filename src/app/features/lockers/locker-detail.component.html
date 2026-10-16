@@ -1,0 +1,138 @@
+<main class="detail-page">
+  <header class="topbar">
+    <a class="brand" routerLink="/app/dashboard" aria-label="Volver al dashboard">
+      <span class="brand-mark" aria-hidden="true">L</span>
+      <span>Locker<span class="brand-accent">Go</span></span>
+    </a>
+    <a class="back-link" routerLink="/app/dashboard">← Volver a lockers</a>
+  </header>
+
+  @if (loading()) {
+    <div class="state-message" role="status">Cargando el locker…</div>
+  } @else if (pageError()) {
+    <section class="state-message error-box" role="alert">
+      <p>{{ pageError() }}</p>
+      <button type="button" (click)="reload()">Reintentar</button>
+    </section>
+  } @else if (state(); as detail) {
+    <section class="detail-content">
+      <div class="title-row">
+        <div>
+          <p class="eyebrow">DETALLE DEL LOCKER</p>
+          <h1>{{ detail.locker.name }}</h1>
+          <p class="subtitle">{{ detail.locker.code }} · {{ detail.locker.location || 'Ubicación no especificada' }}</p>
+        </div>
+        <div class="connection" [class.disconnected]="streamStatus() !== 'LIVE'">
+          <span class="connection-dot"></span>
+          {{ streamStatus() === 'LIVE' ? 'En vivo' : streamStatus() === 'CONNECTING' ? 'Conectando…' : streamStatus() === 'UNAVAILABLE' ? 'Sin actualización en vivo' : 'Reconectando…' }}
+        </div>
+      </div>
+
+      @if (activityError()) {
+        <p class="inline-error" role="alert">{{ activityError() }}</p>
+      }
+
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <h2>Estado actual</h2>
+            <p>Último valor recibido por cada componente.</p>
+          </div>
+          <button type="button" class="secondary-button" (click)="reload()">Actualizar</button>
+        </div>
+        @if (detail.devices.length === 0) {
+          <div class="empty-card">Este locker todavía no tiene dispositivos asociados.</div>
+        } @else {
+          <div class="device-grid">
+            @for (device of detail.devices; track device.id_device) {
+              <article class="device-card">
+                <div class="device-heading">
+                  <div><p class="device-code">{{ device.code }}</p><h3>{{ device.boardModel }}</h3></div>
+                  <span class="badge" [class.badge-offline]="device.connectionStatus !== 'ONLINE'">
+                    {{ deviceStatusLabel(device.connectionStatus) }}
+                  </span>
+                </div>
+                <p class="device-meta">
+                  @if (device.lastSeenAt) {
+                    Último contacto {{ device.lastSeenAt | date:'short' }}
+                  } @else {
+                    Sin lecturas recibidas
+                  }
+                  @if (device.firmwareVersion) { · Firmware {{ device.firmwareVersion }} }
+                </p>
+                @if (device.components.length === 0) {
+                  <p class="no-components">No hay componentes configurados.</p>
+                } @else {
+                  <div class="component-list">
+                    @for (component of device.components; track component.id_component) {
+                      <div class="component-row">
+                        <div><strong>{{ component.name }}</strong><small>{{ component.model.type.name }} · {{ component.key }}</small></div>
+                        @if (component.latestReading; as reading) {
+                          <div class="current-value" [class.quality-error]="reading.quality !== 'OK'">
+                            <strong>{{ valueOf(reading, component.model.type.unit) }}</strong>
+                            <small>{{ reading.recordedAt | date:'short' }} · {{ reading.quality }}</small>
+                          </div>
+                        } @else {
+                          <span class="no-value">Sin datos</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <div class="history-grid">
+        <section class="section panel">
+          <div class="section-heading">
+            <div><h2>Historial de lecturas</h2><p>Las 100 lecturas más recientes.</p></div>
+          </div>
+          @if (readings().length === 0) {
+            <div class="empty-card">Todavía no hay lecturas para este locker.</div>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Fecha</th><th>Componente</th><th>Valor</th><th>Calidad</th></tr></thead>
+                <tbody>
+                  @for (reading of readings(); track reading.id_reading) {
+                    <tr>
+                      <td>{{ reading.recordedAt | date:'short' }}</td>
+                      <td>{{ reading.component.name }}</td>
+                      <td>{{ valueOf(reading) }}</td>
+                      <td><span class="quality" [class.quality-error]="reading.quality !== 'OK'">{{ reading.quality }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+
+        <section class="section panel">
+          <div class="section-heading">
+            <div><h2>Eventos</h2><p>Cambios y alertas recientes.</p></div>
+          </div>
+          @if (events().length === 0) {
+            <div class="empty-card">Todavía no hay eventos registrados.</div>
+          } @else {
+            <ol class="event-list">
+              @for (event of events(); track event.id_event) {
+                <li>
+                  <span class="event-marker" [class.critical]="event.severity === 'CRITICAL'" [class.warning]="event.severity === 'WARNING'"></span>
+                  <div>
+                    <div class="event-title"><strong>{{ event.type }}</strong><span>{{ event.severity }}</span></div>
+                    <p>{{ event.component?.name || 'Sistema' }} · {{ event.createdAt | date:'short' }}</p>
+                    @if (event.detail) { <small>{{ event.detail | json }}</small> }
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        </section>
+      </div>
+    </section>
+  }
+</main>

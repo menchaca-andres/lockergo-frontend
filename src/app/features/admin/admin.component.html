@@ -1,0 +1,189 @@
+<main class="admin-page">
+  <header class="topbar">
+    <a class="brand" routerLink="/app/dashboard" aria-label="Volver al dashboard de LockerGo">
+      <span class="brand-mark" aria-hidden="true">L</span>
+      <span>Locker<span class="brand-accent">Go</span></span>
+    </a>
+    <div class="topbar-actions">
+      <a routerLink="/app/dashboard">Dashboard</a>
+      <button type="button" class="button button-light" (click)="logout()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <section class="admin-content">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">PANEL DE ADMINISTRACIÓN</p>
+        <h1>Gestiona LockerGo</h1>
+        <p>Administra los lockers, usuarios y el acceso a cada espacio.</p>
+      </div>
+      <button type="button" class="button button-light" (click)="loadData()" [disabled]="loading()">Actualizar</button>
+    </div>
+
+    @if (error()) {
+      <p class="notice error" role="alert">{{ error() }}</p>
+    }
+    @if (notice()) {
+      <p class="notice success" role="status">{{ notice() }}</p>
+    }
+
+    <nav class="section-tabs" aria-label="Secciones de administración">
+      <button type="button" [class.active]="section() === 'lockers'" (click)="setSection('lockers')">
+        Lockers <span>{{ lockers().length }}</span>
+      </button>
+      <button type="button" [class.active]="section() === 'users'" (click)="setSection('users')">
+        Usuarios <span>{{ users().length }}</span>
+      </button>
+    </nav>
+
+    @if (loading()) {
+      <div class="panel loading" role="status">Cargando administración…</div>
+    } @else if (section() === 'lockers') {
+      <div class="management-layout">
+        <section class="panel list-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Lockers</h2>
+              <p>Registra los lockers y controla su disponibilidad.</p>
+            </div>
+            <button type="button" class="button button-primary" (click)="startCreateLocker()">Nuevo locker</button>
+          </div>
+          @if (lockers().length === 0) {
+            <div class="empty-state">Todavía no hay lockers registrados.</div>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Locker</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody>
+                  @for (locker of lockers(); track locker.id_locker) {
+                    <tr>
+                      <td><strong>{{ locker.name }}</strong><small>{{ locker.code }}</small></td>
+                      <td>{{ locker.location || 'Sin ubicación' }}</td>
+                      <td><span class="badge" [class.inactive]="!locker.isActive">{{ locker.isActive ? 'Activo' : 'Inactivo' }}</span></td>
+                      <td class="actions">
+                        <button type="button" class="text-button" (click)="editLocker(locker)">Editar</button>
+                        <button type="button" class="text-button" [disabled]="saving()" (click)="toggleLocker(locker)">
+                          {{ locker.isActive ? 'Desactivar' : 'Activar' }}
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+
+        <section class="panel form-panel">
+          <h2>{{ editingLocker() ? 'Editar locker' : 'Registrar locker' }}</h2>
+          <p>{{ editingLocker() ? 'Actualiza los datos del locker seleccionado.' : 'Completa los datos para agregar un locker.' }}</p>
+          <form #lockerForm="ngForm" (ngSubmit)="saveLocker()">
+            <label for="locker-code">Código</label>
+            <input id="locker-code" name="code" [(ngModel)]="lockerDraft.code" required maxlength="80" pattern="[A-Za-z0-9][A-Za-z0-9_-]*">
+            <label for="locker-name">Nombre</label>
+            <input id="locker-name" name="name" [(ngModel)]="lockerDraft.name" required maxlength="120">
+            <label for="locker-location">Ubicación <span>(opcional)</span></label>
+            <input id="locker-location" name="location" [(ngModel)]="lockerDraft.location" maxlength="200">
+            <div class="form-actions">
+              @if (editingLocker()) {
+                <button type="button" class="button button-light" (click)="startCreateLocker()">Cancelar</button>
+              }
+              <button type="submit" class="button button-primary" [disabled]="lockerForm.invalid || saving()">
+                {{ saving() ? 'Guardando…' : editingLocker() ? 'Guardar cambios' : 'Crear locker' }}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    } @else {
+      <div class="management-layout user-layout">
+        <section class="panel list-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Usuarios</h2>
+              <p>Crea cuentas, define roles y administra asignaciones.</p>
+            </div>
+          </div>
+          @if (users().length === 0) {
+            <div class="empty-state">Todavía no hay usuarios registrados.</div>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody>
+                  @for (user of users(); track user.id_user) {
+                    <tr>
+                      <td><strong>{{ user.name }}</strong><small>{{ user.email }}</small></td>
+                      <td>
+                        <select aria-label="Rol de {{ user.name }}" [value]="user.role" [disabled]="saving() || isCurrentUser(user)" (change)="changeRole(user, $any($event.target).value)">
+                          <option value="USER">Usuario</option>
+                          <option value="ADMIN">Administrador</option>
+                        </select>
+                      </td>
+                      <td><span class="badge" [class.inactive]="!user.isActive">{{ user.isActive ? 'Activo' : 'Inactivo' }}</span></td>
+                      <td class="actions">
+                        @if (user.role === 'USER') {
+                          <button type="button" class="text-button" (click)="manageAssignments(user)">Asignaciones</button>
+                        }
+                        <button type="button" class="text-button" [disabled]="saving() || isCurrentUser(user)" (click)="toggleUser(user)">
+                          {{ user.isActive ? 'Desactivar' : 'Activar' }}
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+
+        <section class="panel form-panel">
+          <h2>Crear usuario</h2>
+          <p>La contraseña debe tener al menos 12 caracteres.</p>
+          <form #userForm="ngForm" (ngSubmit)="createUser()">
+            <label for="user-name">Nombre</label>
+            <input id="user-name" name="name" [(ngModel)]="userDraft.name" required maxlength="120">
+            <label for="user-email">Correo electrónico</label>
+            <input id="user-email" name="email" type="email" [(ngModel)]="userDraft.email" required>
+            <label for="user-password">Contraseña temporal</label>
+            <input id="user-password" name="password" type="password" [(ngModel)]="userDraft.password" required minlength="12" autocomplete="new-password">
+            <label for="user-role">Rol</label>
+            <select id="user-role" name="role" [(ngModel)]="userDraft.role">
+              <option value="USER">Usuario</option>
+              <option value="ADMIN">Administrador</option>
+            </select>
+            <button type="submit" class="button button-primary full-width" [disabled]="userForm.invalid || saving()">
+              {{ saving() ? 'Creando…' : 'Crear usuario' }}
+            </button>
+          </form>
+        </section>
+      </div>
+
+      @if (selectedUser(); as assignmentUser) {
+        <section class="panel assignments-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Lockers asignados a {{ assignmentUser.name }}</h2>
+              <p>Los usuarios solo pueden ver lockers activos que estén asignados.</p>
+            </div>
+            <button type="button" class="button button-light" (click)="closeAssignments()">Cerrar</button>
+          </div>
+          @if (lockers().length === 0) {
+            <p class="empty-state">Primero registra un locker para poder asignarlo.</p>
+          } @else {
+            <div class="assignment-list">
+              @for (locker of lockers(); track locker.id_locker) {
+                <label class="assignment-option" [class.disabled]="!locker.isActive">
+                  <input type="checkbox" [checked]="selectedLockerIds().includes(locker.id_locker)" [disabled]="!locker.isActive" (change)="toggleAssignment(locker.id_locker, $any($event.target).checked)">
+                  <span><strong>{{ locker.name }}</strong><small>{{ locker.code }} · {{ locker.location || 'Sin ubicación' }}</small></span>
+                  @if (!locker.isActive) { <span class="badge inactive">Inactivo</span> }
+                </label>
+              }
+            </div>
+          }
+          <button type="button" class="button button-primary" [disabled]="saving()" (click)="saveAssignments()">Guardar asignaciones</button>
+        </section>
+      }
+    }
+  </section>
+</main>

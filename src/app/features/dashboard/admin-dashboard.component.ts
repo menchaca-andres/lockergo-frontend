@@ -27,6 +27,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   readonly days = DAY_LABELS;
   readonly hours = Array.from({ length: 24 }, (_value, hour) => hour);
   readonly hasAlerts = computed(() => (this.overview()?.alerts.length ?? 0) > 0);
+  readonly totalPackageCount = computed(
+    () => (this.overview()?.packagesByStatus ?? []).reduce((total, item) => total + item.count, 0)
+  );
+  readonly packageSizeDistributionAvailable = computed(
+    () => Array.isArray(this.overview()?.packageSizeDistribution)
+  );
+  readonly unmeasuredPackageCount = computed(
+    () => this.overview()?.packageSizeDistribution?.find(({ size }) => size === null)?.count ?? 0
+  );
   readonly rankingData = computed<ChartData<'bar'>>(() => {
     const ranking = this.overview()?.lockerRanking ?? [];
     return {
@@ -52,6 +61,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }]
     };
   });
+  readonly packageSizeData = computed<ChartData<'bar'>>(() => {
+    const sizes = this.overview()?.packageSizeDistribution ?? [];
+    const countFor = (size: 'S' | 'M' | 'L' | null) =>
+      sizes.find((item) => item.size === size)?.count ?? 0;
+    return {
+      labels: ['Talla S', 'Talla M', 'Talla L', 'Sin medida válida'],
+      datasets: [{
+        data: [countFor('S'), countFor('M'), countFor('L'), countFor(null)],
+        backgroundColor: ['#168b7e', '#e2a542', '#597b9b', '#a7b5b2'],
+        borderRadius: 6,
+        barThickness: 24
+      }]
+    };
+  });
   readonly rankingOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -67,6 +90,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     maintainAspectRatio: false,
     cutout: '70%',
     plugins: { legend: { position: 'bottom' } }
+  };
+  readonly packageSizeOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        beginAtZero: true,
+        ticks: { precision: 0 },
+        grid: { color: 'rgba(120, 145, 146, .16)' }
+      },
+      y: { grid: { display: false } }
+    }
   };
 
   private readonly api = inject(DashboardApiService);

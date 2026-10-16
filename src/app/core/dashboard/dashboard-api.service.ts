@@ -55,6 +55,7 @@ export interface AdminDashboardOverview {
     count: number;
   }>;
   packagesByStatus: Array<{ status: PackageStatus; count: number }>;
+  packageSizeDistribution: Array<{ size: PackageSize | null; count: number }>;
   alerts: Array<{
     type: string;
     severity: string;

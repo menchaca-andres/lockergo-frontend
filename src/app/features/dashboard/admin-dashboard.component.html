@@ -56,28 +56,30 @@
             <p class="eyebrow">MOVIMIENTO · 30 DÍAS</p>
             <h2>Actividad por día y hora</h2>
           </div>
-          <span class="unit-label">Aperturas · UTC</span>
+          <span class="unit-label">
+            {{ totalActivityCount() }} aperturas · {{ data.activityRange.timezone }} · actualizado {{ data.generatedAt | date:'shortTime' }}
+          </span>
         </div>
         <div class="heatmap-scroll" role="region" aria-label="Mapa de calor de aperturas por día y hora" tabindex="0">
           <div class="heatmap">
             <div class="heat-row heat-header" role="row">
               <span class="day-label"></span>
               @for (hour of hours; track hour) {
-                <span class="hour-label">{{ hour % 2 === 0 ? hour : '' }}</span>
+                <span class="hour-label">{{ hour.toString().padStart(2, '0') }}</span>
               }
             </div>
-            @for (day of days; track $index) {
+            @for (day of days; track $index; let dayIndex = $index) {
               <div class="heat-row" role="row">
                 <span class="day-label">{{ day }}</span>
                 @for (hour of hours; track hour) {
                   <span
                     class="heat-cell"
                     role="gridcell"
-                    [style.background-color]="heatBackground($index, hour)"
-                    [style.color]="heatTextColor($index, hour)"
-                    [attr.aria-label]="day + ', ' + hour + ':00 UTC: ' + heatCount($index, hour) + ' aperturas'"
-                    [title]="day + ', ' + hour + ':00 UTC · ' + heatCount($index, hour) + ' aperturas'"
-                  >{{ heatCount($index, hour) || '' }}</span>
+                    [style.background-color]="heatBackground(dayIndex, hour)"
+                    [style.color]="heatTextColor(dayIndex, hour)"
+                    [attr.aria-label]="heatCellLabel(dayIndex, hour)"
+                    [title]="heatCellLabel(dayIndex, hour)"
+                  >{{ heatCount(dayIndex, hour) }}</span>
                 }
               </div>
             }
@@ -137,29 +139,25 @@
         <div class="panel-heading">
           <div>
             <p class="eyebrow">MEDICIÓN ULTRASÓNICA</p>
-            <h2>Tallas estimadas de paquetes</h2>
+            <h2>Medidas de paquetes</h2>
           </div>
+          <span class="unit-label">Altura · cm (máx. 20)</span>
         </div>
-        @if (totalPackageCount() > 0) {
-          @if (packageSizeDistributionAvailable()) {
-            <div class="chart-wrap size-chart">
+        @if (data.packageMeasurements.length > 0) {
+          <div class="measurement-chart-scroll" role="region" aria-label="Medidas de paquetes de los últimos 30 días" tabindex="0">
+            <div class="chart-wrap measurement-chart" [style.height]="packageMeasurementChartHeight()">
               <canvas
                 baseChart
                 [type]="'bar'"
-                [data]="packageSizeData()"
-                [options]="packageSizeOptions"
-                aria-label="Cantidad de paquetes por talla estimada y sin medida válida"
+                [data]="packageMeasurementData()"
+                [options]="packageMeasurementOptions"
+                aria-label="Altura estimada de cada paquete depositado, limitada a 20 centímetros"
               ></canvas>
             </div>
-            <p class="chart-caption">
-              {{ totalPackageCount() - unmeasuredPackageCount() }} de {{ totalPackageCount() }} paquetes tienen una talla válida.
-              S: hasta 6,7 cm · M: hasta 13,3 cm · L: hasta 20 cm.
-            </p>
-          } @else {
-            <p class="inline-empty" role="status">La API aún no devuelve la distribución de tallas. Reinicia el backend para cargar la actualización.</p>
-          }
+          </div>
+          <p class="chart-caption">Cada barra muestra la altura estimada de un paquete depositado. Solo se incluyen medidas válidas entre 0 y 20 cm, que respetan la altura interna del locker. Pasa el cursor para ver cuándo se registró.</p>
         } @else {
-          <p class="inline-empty">Aún no hay paquetes registrados para medir.</p>
+          <p class="inline-empty">Aún no hay medidas válidas de paquetes (0–20 cm) en los últimos 30 días.</p>
         }
       </article>
 

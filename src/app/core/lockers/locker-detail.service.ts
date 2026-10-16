@@ -48,6 +48,7 @@ export interface Reading {
   valueText: string | null;
   payload: unknown;
   quality: string;
+  purpose: 'PERIODIC' | 'DOOR_CLOSE';
   recordedAt: string;
   receivedAt: string;
   component: {
@@ -72,6 +73,14 @@ export interface LockerDataFilters {
   from?: string;
   to?: string;
   limit?: number;
+  page?: number;
+  componentId?: number;
+  type?: string;
+}
+
+export interface LockerReadingPage {
+  readings: Reading[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
 export interface LockerAnalytics {
@@ -102,8 +111,8 @@ export class LockerDetailService {
     return this.http.get<LockerDetailState>(`${LOCKERS_API}/${id}/state`);
   }
 
-  readings(id: number, filters: LockerDataFilters = {}): Observable<{ readings: Reading[] }> {
-    return this.http.get<{ readings: Reading[] }>(`${LOCKERS_API}/${id}/readings`, {
+  readings(id: number, filters: LockerDataFilters = {}): Observable<LockerReadingPage> {
+    return this.http.get<LockerReadingPage>(`${LOCKERS_API}/${id}/readings`, {
       params: this.toParams(filters)
     });
   }
@@ -135,6 +144,9 @@ export class LockerDetailService {
     let params = new HttpParams().set('limit', String(filters.limit ?? 100));
     if (filters.from) params = params.set('from', filters.from);
     if (filters.to) params = params.set('to', filters.to);
+    if (filters.page) params = params.set('page', String(filters.page));
+    if (filters.componentId) params = params.set('componentId', String(filters.componentId));
+    if (filters.type) params = params.set('type', filters.type);
     return params;
   }
 }

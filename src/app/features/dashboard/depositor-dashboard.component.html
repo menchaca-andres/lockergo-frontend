@@ -51,7 +51,7 @@
                   <div class="package-top">
                     <div><span class="eyebrow">CÓDIGO DE ENVÍO</span><h3>{{ item.code }}</h3></div>
                     <span class="status-tag" [class.picked]="item.status === 'PICKED_UP'">
-                      {{ item.status === 'PICKED_UP' ? 'Recogido' : item.depositedAt ? 'Pendiente' : 'Por depositar' }}
+                      {{ item.status === 'PICKED_UP' ? 'Recogido' : item.depositedAt ? 'Depositado · por recoger' : 'Por depositar' }}
                     </span>
                   </div>
                   <div class="package-info">

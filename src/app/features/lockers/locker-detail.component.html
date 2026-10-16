@@ -233,25 +233,62 @@
       <div class="history-grid">
         <section class="section panel">
           <div class="section-heading">
-            <div><h2>Historial de lecturas</h2><p>Las 100 lecturas más recientes.</p></div>
+            <div>
+              <h2>Historial de lecturas</h2>
+              <p>Lecturas del componente seleccionado, ordenadas de más recientes a más antiguas.</p>
+            </div>
+            @if (readingComponents().length > 0) {
+              <label class="history-filter">
+                <span>Componente</span>
+                <select [value]="readingComponentId()" (change)="onReadingComponentChange($event)">
+                  @for (component of readingComponents(); track component.id_component) {
+                    <option [value]="component.id_component">
+                      {{ component.name }} · {{ component.model.type.name }}
+                    </option>
+                  }
+                </select>
+              </label>
+            }
           </div>
-          @if (readings().length === 0) {
-            <div class="empty-card">Todavía no hay lecturas para este locker.</div>
+          @if (readingError()) {
+            <div class="empty-card error-card">{{ readingError() }}</div>
+          } @else if (readingLoading()) {
+            <div class="empty-card">Cargando lecturas…</div>
+          } @else if (readings().length === 0) {
+            <div class="empty-card">Todavía no hay lecturas para este componente.</div>
           } @else {
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Fecha</th><th>Componente</th><th>Valor</th><th>Calidad</th></tr></thead>
+                <thead><tr><th>Fecha</th><th>Valor</th><th>Calidad</th><th>Tipo</th></tr></thead>
                 <tbody>
                   @for (reading of readings(); track reading.id_reading) {
                     <tr>
                       <td>{{ reading.recordedAt | date:'short' }}</td>
-                      <td>{{ reading.component.name }}</td>
                       <td>{{ valueOf(reading) }}</td>
                       <td><span class="quality" [class.quality-error]="reading.quality !== 'OK'">{{ reading.quality }}</span></td>
+                      <td>
+                        @if (reading.purpose === 'DOOR_CLOSE') {
+                          <span class="reading-purpose">Al cierre</span>
+                        } @else {
+                          <span class="muted">Periódica</span>
+                        }
+                      </td>
                     </tr>
                   }
                 </tbody>
               </table>
+            </div>
+            <div class="history-pagination">
+              <span>
+                {{ readingPagination().total }} lecturas · Página {{ readingPagination().page }}
+                de {{ readingPagination().totalPages }}
+              </span>
+              <div>
+                <button type="button" class="secondary-button" (click)="previousReadingPage()"
+                  [disabled]="readingPage() <= 1">Anterior</button>
+                <button type="button" class="secondary-button" (click)="nextReadingPage()"
+                  [disabled]="readingPage() >= readingPagination().totalPages">Siguiente</button>
+              </div>
             </div>
           }
         </section>

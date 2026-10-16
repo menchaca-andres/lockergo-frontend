@@ -27,14 +27,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   readonly days = DAY_LABELS;
   readonly hours = Array.from({ length: 24 }, (_value, hour) => hour);
   readonly hasAlerts = computed(() => (this.overview()?.alerts.length ?? 0) > 0);
-  readonly totalPackageCount = computed(
-    () => (this.overview()?.packagesByStatus ?? []).reduce((total, item) => total + item.count, 0)
-  );
-  readonly packageSizeDistributionAvailable = computed(
-    () => Array.isArray(this.overview()?.packageSizeDistribution)
-  );
-  readonly unmeasuredPackageCount = computed(
-    () => this.overview()?.packageSizeDistribution?.find(({ size }) => size === null)?.count ?? 0
+  readonly totalActivityCount = computed(
+    () => (this.overview()?.activityHeatmap ?? []).reduce((total, cell) => total + cell.count, 0)
   );
   readonly rankingData = computed<ChartData<'bar'>>(() => {
     const ranking = this.overview()?.lockerRanking ?? [];
@@ -61,20 +55,22 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }]
     };
   });
-  readonly packageSizeData = computed<ChartData<'bar'>>(() => {
-    const sizes = this.overview()?.packageSizeDistribution ?? [];
-    const countFor = (size: 'S' | 'M' | 'L' | null) =>
-      sizes.find((item) => item.size === size)?.count ?? 0;
+  readonly packageMeasurementData = computed<ChartData<'bar'>>(() => {
+    const measurements = this.overview()?.packageMeasurements ?? [];
     return {
-      labels: ['Talla S', 'Talla M', 'Talla L', 'Sin medida válida'],
+      labels: measurements.map(({ packageCode, lockerCode }) => `${packageCode} · ${lockerCode}`),
       datasets: [{
-        data: [countFor('S'), countFor('M'), countFor('L'), countFor(null)],
-        backgroundColor: ['#168b7e', '#e2a542', '#597b9b', '#a7b5b2'],
+        data: measurements.map(({ estimatedHeightCm }) => estimatedHeightCm),
+        label: 'Altura estimada',
+        backgroundColor: '#168b7e',
         borderRadius: 6,
-        barThickness: 24
+        barThickness: 18
       }]
     };
   });
+  readonly packageMeasurementChartHeight = computed(
+    () => `${Math.max(180, (this.overview()?.packageMeasurements.length ?? 0) * 34)}px`
+  );
   readonly rankingOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -91,15 +87,31 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     cutout: '70%',
     plugins: { legend: { position: 'bottom' } }
   };
-  readonly packageSizeOptions: ChartConfiguration<'bar'>['options'] = {
+  readonly packageMeasurementOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: 'y',
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const height = context.parsed.x;
+            return typeof height === 'number' ? ` ${height.toFixed(1)} cm` : 'Sin medida válida';
+          },
+        afterLabel: (context) => {
+          const measurement = this.overview()?.packageMeasurements[context.dataIndex];
+          return measurement ? `Registrada: ${new Date(measurement.recordedAt).toLocaleString()}` : '';
+        }
+      }
+      }
+    },
     scales: {
       x: {
         beginAtZero: true,
-        ticks: { precision: 0 },
+        max: 20,
+        title: { display: true, text: 'Altura estimada del paquete (cm)' },
+        ticks: { precision: 1 },
         grid: { color: 'rgba(120, 145, 146, .16)' }
       },
       y: { grid: { display: false } }
@@ -148,6 +160,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const cells = this.overview()?.activityHeatmap ?? [];
     const max = Math.max(1, ...cells.map((cell) => cell.count));
     return this.heatCount(dayOfWeek, hour) / max >= 0.5 ? '#fff' : '#18584f';
+  }
+
+  heatCellLabel(dayOfWeek: number, hour: number): string {
+    const formatHour = (value: number) => String(value).padStart(2, '0');
+    const nextHour = (hour + 1) % 24;
+    const timezone = this.overview()?.activityRange.timezone ?? 'hora local';
+    return `${DAY_LABELS[dayOfWeek]}, ${formatHour(hour)}:00–${formatHour(nextHour)}:00 ${timezone}: ${this.heatCount(dayOfWeek, hour)} aperturas`;
   }
 
   eventLabel(type: string): string {

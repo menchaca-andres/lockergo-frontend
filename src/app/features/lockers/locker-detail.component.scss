@@ -37,6 +37,8 @@ h2{margin-bottom:5px;font-size:20px}
 .history-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);align-items:start;gap:16px}
 .panel{min-width:0;padding:20px}
 .panel .section-heading{margin-bottom:14px}
+.history-filter{display:grid;gap:5px;min-width:190px;color:#718187;font-size:10px}
+.history-filter select{max-width:260px;padding:8px 10px;border:1px solid #dce6e4;border-radius:8px;background:#fff;color:#19313b;font:inherit;font-size:12px}
 .table-wrap{overflow:auto}
 table{width:100%;border-collapse:collapse;text-align:left}
 th{padding:9px 8px;color:#718187;font-size:10px;text-transform:uppercase;letter-spacing:.4px}
@@ -48,6 +50,12 @@ td{padding:11px 8px;border-top:1px solid #edf1f0;color:#52666c;font-size:11px;wh
 .event-title strong{font-size:12px}
 .event-title span{color:#879397;font-size:9px}
 .event-list p{margin:5px 0 0;color:#718187;font-size:10px}
+.reading-purpose{padding:4px 7px;border-radius:99px;background:#eaf6ef;color:#28784a;font-size:10px;font-weight:650}
+.muted{color:#879397}
+.history-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;color:#718187;font-size:11px}
+.history-pagination>div{display:flex;gap:7px}
+.secondary-button:disabled{opacity:.45;cursor:not-allowed}
+.error-card{border-color:#f0d5d2;background:#fff8f7;color:#a63b35}
 .empty-card{padding:22px;color:#718187;font-size:12px;text-align:center}
 .state-message{max-width:1320px;margin:70px auto;padding:24px;color:#718187;text-align:center}
 .error-box{border-color:#f0d5d2;background:#fff8f7;color:#a63b35}

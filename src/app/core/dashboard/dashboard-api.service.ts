@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { Locker } from '../lockers/lockers.service';
@@ -56,6 +56,12 @@ export interface AdminDashboardOverview {
   }>;
   packagesByStatus: Array<{ status: PackageStatus; count: number }>;
   packageSizeDistribution: Array<{ size: PackageSize | null; count: number }>;
+  packageMeasurements: Array<{
+    packageCode: string;
+    lockerCode: string;
+    estimatedHeightCm: number;
+    recordedAt: string;
+  }>;
   alerts: Array<{
     type: string;
     severity: string;
@@ -84,7 +90,9 @@ export class DashboardApiService {
   private readonly http = inject(HttpClient);
 
   adminOverview(): Observable<AdminDashboardOverview> {
-    return this.http.get<AdminDashboardOverview>(`${API}/dashboard/admin/overview`);
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const params = new HttpParams().set('timezone', timezone);
+    return this.http.get<AdminDashboardOverview>(`${API}/dashboard/admin/overview`, { params });
   }
 
   packages(): Observable<LockerPackage[]> {

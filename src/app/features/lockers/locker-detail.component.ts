@@ -28,6 +28,11 @@ const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 export class LockerDetailComponent implements OnInit, OnDestroy {
   readonly state = signal<LockerDetailState | null>(null);
   readonly readings = signal<Reading[]>([]);
+  readonly readingPage = signal(1);
+  readonly readingPagination = signal({ page: 1, limit: 20, total: 0, totalPages: 0 });
+  readonly readingComponentId = signal<number | null>(null);
+  readonly readingLoading = signal(false);
+  readonly readingError = signal('');
   readonly events = signal<LockerEvent[]>([]);
   readonly analytics = signal<LockerAnalytics | null>(null);
   readonly loading = signal(true);
@@ -37,6 +42,9 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
   readonly analyticsError = signal('');
   readonly streamStatus = signal<'CONNECTING' | 'LIVE' | 'RECONNECTING' | 'UNAVAILABLE'>('CONNECTING');
   readonly isAdmin = computed(() => this.auth.user()?.role === 'ADMIN');
+  readonly readingComponents = computed(() => this.state()?.devices.flatMap(
+    (device) => device.components
+  ) ?? []);
   readonly days = DAY_LABELS;
   readonly hours = Array.from({ length: 24 }, (_value, hour) => hour);
   readonly doorChartData = computed<ChartData<'bar'>>(() => {
@@ -164,19 +172,42 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  onReadingComponentChange(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    const componentId = Number(target.value);
+    if (!Number.isSafeInteger(componentId) || componentId <= 0) return;
+    this.readingComponentId.set(componentId);
+    this.loadReadingHistory(1);
+  }
+
+  previousReadingPage(): void {
+    if (this.readingPage() > 1) this.loadReadingHistory(this.readingPage() - 1);
+  }
+
+  nextReadingPage(): void {
+    if (this.readingPage() < this.readingPagination().totalPages) {
+      this.loadReadingHistory(this.readingPage() + 1);
+    }
+  }
+
   private loadInitial(): void {
     forkJoin({
       state: this.api.state(this.lockerId),
-      readings: this.api.readings(this.lockerId),
       events: this.api.events(this.lockerId)
     }).subscribe({
-      next: ({ state, readings, events }) => {
+      next: ({ state, events }) => {
         if (this.destroyed) return;
         this.state.set(state);
-        this.readings.set(readings.readings);
+        const components = state.devices.flatMap((device) => device.components);
+        const selected = this.readingComponentId();
+        if (!selected || !components.some((component) => component.id_component === selected)) {
+          this.readingComponentId.set(components[0]?.id_component ?? null);
+        }
         this.events.set(events.events);
         this.loading.set(false);
         this.activityError.set('');
+        this.loadReadingHistory(1);
         this.connectStream();
         this.loadAnalytics();
         if (!this.statusTimer) {
@@ -239,13 +270,18 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
   private refreshLiveData(): void {
     forkJoin({
       state: this.api.state(this.lockerId),
-      readings: this.api.readings(this.lockerId),
       events: this.api.events(this.lockerId)
     }).subscribe({
-      next: ({ state, readings, events }) => {
+      next: ({ state, events }) => {
         if (this.destroyed) return;
         this.state.set(state);
-        this.readings.set(readings.readings);
+        const components = state.devices.flatMap((device) => device.components);
+        if (!components.some((component) => component.id_component === this.readingComponentId())) {
+          this.readingComponentId.set(components[0]?.id_component ?? null);
+          this.loadReadingHistory(1);
+        } else {
+          this.loadReadingHistory(this.readingPage());
+        }
         this.events.set(events.events);
         this.activityError.set('');
         this.loadAnalytics();
@@ -253,6 +289,32 @@ export class LockerDetailComponent implements OnInit, OnDestroy {
       error: (error: unknown) => {
         if (this.destroyed) return;
         this.activityError.set(this.errorMessage(error, 'No se pudo actualizar la información.'));
+      }
+    });
+  }
+
+  private loadReadingHistory(page: number): void {
+    const componentId = this.readingComponentId();
+    if (componentId === null) {
+      this.readings.set([]);
+      this.readingPagination.set({ page: 1, limit: 20, total: 0, totalPages: 0 });
+      this.readingLoading.set(false);
+      return;
+    }
+    this.readingLoading.set(true);
+    this.readingError.set('');
+    this.api.readings(this.lockerId, { componentId, page, limit: 20 }).subscribe({
+      next: (result) => {
+        if (this.destroyed || componentId !== this.readingComponentId()) return;
+        this.readings.set(result.readings);
+        this.readingPagination.set(result.pagination);
+        this.readingPage.set(result.pagination.page);
+        this.readingLoading.set(false);
+      },
+      error: (error: unknown) => {
+        if (this.destroyed) return;
+        this.readingError.set(this.errorMessage(error, 'No se pudo cargar el historial de lecturas.'));
+        this.readingLoading.set(false);
       }
     });
   }
